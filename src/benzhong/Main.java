@@ -10,11 +10,11 @@ public class Main {
         String trainFileName = "data/train.txt";
         String testFileName = "data/test.txt";
         String answerFileName = "data/test.answer.txt";
-        String outputFileName = "data/output2.txt";
+        String outputFileName = "data/output_sp_10.txt";
 
-        StructedPerceptron.runner(trainFileName, testFileName, outputFileName);
+        //StructedPerceptron.runner(trainFileName, testFileName, outputFileName);
         //MaxMatch.runner(trainFileName, testFileName, outputFileName);
-        //Evaluation.evaluation(answerFileName, outputFileName);
+        Evaluation.evaluation(answerFileName, outputFileName);
 
         /*final File testFile = new File(testFileName);
         BufferedReader br1 = new BufferedReader(new InputStreamReader(new FileInputStream(testFile)));

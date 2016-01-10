@@ -13,7 +13,12 @@ public class Sentence {
         label = "";
 
         String[] wdArr = line.split("  ");
+
         for (int i = 0; i < wdArr.length; i++) {
+            while (wdArr[i].length() > 0 && wdArr[i].charAt(0) == ' ') {
+                //System.out.println(wdArr[i]);
+                wdArr[i] = wdArr[i].substring(1);
+            }
             if (wdArr[i].length() == 0)
                 continue;
             if (wdArr[i].length() == 1) {

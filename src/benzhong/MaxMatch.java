@@ -12,16 +12,22 @@ public class MaxMatch {
     static HashSet<String> dic = new HashSet<>();
     final static int maxLen = 5;
 
-    public static void runner(String trainFileName, String testFileName, String outputFileName) throws IOException{
+    public static void runner(String trainFileName, String testFileName, String outputFileName) throws IOException {
         final File trainFile = new File(trainFileName);
         BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(trainFile)));
         String line;
         while ((line = br.readLine()) != null) {
             String[] dicArr = line.split("  ");
             for (int i = 0; i < dicArr.length; i++) {
+                while (dicArr[i].length() > 0 && dicArr[i].charAt(0) == ' ') {
+                    dicArr[i] = dicArr[i].substring(1);
+                }
+                if (dicArr[i].length() == 0)
+                    continue;
                 dic.add(dicArr[i]);
             }
         }
+        br.close();
 
         final File testFile = new File(testFileName);
         br = new BufferedReader(new InputStreamReader(new FileInputStream(testFile)));
@@ -44,6 +50,7 @@ public class MaxMatch {
             bw.write('\n');
             //System.out.print("\n");
         }
+        br.close();
         bw.close();
     }
 }

@@ -14,7 +14,7 @@ import benzhong.datastruct.Sentence;
 public class StructedPerceptron {
     static HashMap<String, Integer> parameters = new HashMap<>();
     static ArrayList<Sentence> trainStc = new ArrayList();
-    final static int loopCnt = 1;
+    final static int loopCnt = 10;
 
     final static String punc = "．，！（）.?‘’“”…、。〈〉《》『』〔〕";
     final static String number = "０１２３４５６７８９";
@@ -44,42 +44,42 @@ public class StructedPerceptron {
     static HashSet<String> getFeature(String cont, char preLab, char lab, int index) {
         HashSet<String> feature = new HashSet<>();
 
-        feature.add("1" + cont.charAt(index));
+        feature.add("1" + cont.charAt(index) + lab);
         if (index > 0) {
-            feature.add("2" + cont.charAt(index - 1));
+            feature.add("2" + cont.charAt(index - 1) + lab);
         }
         if (index < cont.length() - 1) {
-            feature.add("3" + cont.charAt(index + 1));
+            feature.add("3" + cont.charAt(index + 1) + lab);
         }
 
         if (index > 0) {
-            feature.add("4" + cont.substring(index - 1, index + 1));
+            feature.add("4" + cont.substring(index - 1, index + 1) + lab);
         }
         if (index < cont.length() - 1) {
-            feature.add("5" + cont.substring(index, index + 2));
+            feature.add("5" + cont.substring(index, index + 2) + lab);
         }
 
-        if (index - 1 > 0) {
+        /*if (index - 1 > 0) {
             feature.add("6" + cont.substring(index - 2 ,index + 1));
-        }
+        }*/
         if (index > 0 && index < cont.length() - 1) {
-            feature.add("7" + cont.substring(index - 1, index + 2));
+            feature.add("7" + cont.substring(index - 1, index + 2) + lab);
         }
-        if (index < cont.length() - 2) {
+        /*if (index < cont.length() - 2) {
             feature.add("8" + cont.substring(index, index + 3));
-        }
+        }*/
 
         char type = getType(cont.charAt(index));
-        feature.add("9" + type);
+        feature.add("9" + type + lab);
 
-        if (index > 0) {
+        /*if (index > 0) {
             feature.add("10" + preLab);
-        }
-        feature.add("11" + lab);
+        }*/
+        //feature.add("11" + lab);
         feature.add("12" + preLab + lab);
 
-        feature.add("13" + cont.charAt(index) + lab);
-        feature.add("14" + type + lab);
+        //feature.add("13" + cont.charAt(index) + lab);
+        //feature.add("14" + type + lab);
 
 
         return feature;
@@ -100,10 +100,8 @@ public class StructedPerceptron {
         //int [][] p = new int[cont.length()][Main.labelCnt];
 
         for (int j = 0; j < Main.labelCnt; j++) {
-            System.out.printf("%d ", j);
             f[0][j] = dot(getFeature(cont, '-', (char)(j + '0'), 0));
         }
-        System.out.println();
 
         for (int i = 1, len = cont.length(); i < len; i++) {
             for (int j = 0; j < Main.labelCnt; j++) {
@@ -145,7 +143,13 @@ public class StructedPerceptron {
         Iterator<String> it = feature.iterator();
         while (it.hasNext()) {
             String f = it.next();
-            parameters.put(f, parameters.getOrDefault(f, 0) + d);
+            Integer val = parameters.getOrDefault(f, 0) + d;
+            if (val != 0) {
+                parameters.put(f, val);
+            }
+            else {
+                parameters.remove(f);
+            }
         }
 
         for (int i = 1, num = s.content.length(); i < num; i++) {
@@ -153,12 +157,21 @@ public class StructedPerceptron {
             it = feature.iterator();
             while (it.hasNext()) {
                 String f = it.next();
-                parameters.put(f, parameters.getOrDefault(f, 0) + d);
+                Integer val = parameters.getOrDefault(f, 0) + d;
+                if (val != 0) {
+                    parameters.put(f, val);
+                }
+                else {
+                    parameters.remove(f);
+                }
             }
         }
     }
 
     public static void runner(String trainFileName, String testFileName, String outputFileName) throws IOException {
+
+        long startTime = System.currentTimeMillis();
+
         final File trainFile = new File(trainFileName);
         BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(trainFile)));
 
@@ -168,27 +181,53 @@ public class StructedPerceptron {
             trainStc.add(new Sentence(line));
         }
         System.out.println(trainStc.size());
+        br.close();
 
         for (int loop = 0; loop < loopCnt; loop++) {
             int num = trainStc.size();
             for (int i = 0; i < num; i++) {
-                System.out.println(i);
+                System.out.println(loop + " - " + i);
                 Sentence curStc = trainStc.get(i);
                 if (curStc.content.length() == 0)
                     continue;
                 String decode = viterbi(curStc.content);
+                System.out.println(decode + "\n" + curStc.label);
                 updateParameters(curStc, decode, -1);
                 updateParameters(curStc, curStc.label, 1);
             }
-            break;
         }
 
-        final File outputFile = new File(outputFileName);
-        BufferedWriter bw = new BufferedWriter(new PrintWriter(outputFile));
+        final File parameterFile = new File("data/parameter.txt");
+        BufferedWriter bw = new BufferedWriter(new PrintWriter(parameterFile));
         for (String str : parameters.keySet()) {
-            System.out.println(str);
+            //System.out.println(str);
             bw.write(str + " " + parameters.get(str) + "\n");
         }
         bw.close();
+
+        final File testFile = new File(testFileName);
+        br = new BufferedReader(new InputStreamReader(new FileInputStream(testFile)));
+        final File outputFile = new File(outputFileName);
+        bw = new BufferedWriter(new PrintWriter(outputFile));
+        while ((line = br.readLine()) != null) {
+            String decode = viterbi(line);
+            for (int i = 0, len = line.length(); i < len; i++) {
+                if ((decode.charAt(i) == '0' || decode.charAt(i) == '3') && i > 0) {
+                    bw.write("  ");
+                }
+                bw.write(line.charAt(i));
+            }
+            bw.write("\n");
+        }
+        br.close();
+        bw.close();
+
+        long elapsedTime = System.currentTimeMillis() - startTime;
+        System.out.println("Elapsed time = " + elapsedTime / 1000.0 + " secs");
+
+        System.gc();
+        long memUsed = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / (1024L * 1024L);
+        System.out.println("Memory in use after the analysis: " + memUsed + " MB");
+
     }
 }

@@ -1,18 +1,18 @@
 package benzhong;
 
+import benzhong.datastruct.Fearture;
+import benzhong.datastruct.Sentence;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import benzhong.datastruct.Fearture;
-
-import benzhong.datastruct.Sentence;
 
 /**
  * Created by BenZ on 16/1/10.
  */
-public class StructedPerceptron {
+public class UnstructedPerceptron {
     static HashMap<String, Integer> parameters = new HashMap<>();
     static ArrayList<Sentence> trainStc = new ArrayList();
     final static int loopCnt = 10;
@@ -28,8 +28,6 @@ public class StructedPerceptron {
     static int[][] f = new int[10005][Main.labelCnt];
     static int[][] p = new int[10005][Main.labelCnt];
     static String viterbi(String cont) {
-        //int [][] f = new int[cont.length()][Main.labelCnt];
-        //int [][] p = new int[cont.length()][Main.labelCnt];
 
         for (int j = 0; j < Main.labelCnt; j++) {
             f[0][j] = dot(Fearture.getFeature(cont, '-', (char) (j + '0'), 0));
@@ -70,8 +68,20 @@ public class StructedPerceptron {
         return s;
     }
 
-    static void updateParameters(Sentence s, String lab, int d) {
-        HashSet<String> feature = Fearture.getFeature(s.content, '-', lab.charAt(0), 0);
+    static char getBestLab(String cont, char preLab, int index) {
+        char best = '-';
+        int val = -2147483647;
+        for (char i = '0'; i < '4'; i++) {
+            int tmp = dot(Fearture.getFeature(cont, preLab, i, index));
+            if (tmp > val) {
+                best = i;
+                val = tmp;
+            }
+        }
+        return best;
+    }
+
+    static void addParameters(HashSet<String> feature, int d) {
         Iterator<String> it = feature.iterator();
         while (it.hasNext()) {
             String f = it.next();
@@ -81,21 +91,6 @@ public class StructedPerceptron {
             }
             else {
                 parameters.remove(f);
-            }
-        }
-
-        for (int i = 1, num = s.content.length(); i < num; i++) {
-            feature = Fearture.getFeature(s.content, lab.charAt(i - 1), lab.charAt(i), i);
-            it = feature.iterator();
-            while (it.hasNext()) {
-                String f = it.next();
-                Integer val = parameters.getOrDefault(f, 0) + d;
-                if (val != 0) {
-                    parameters.put(f, val);
-                }
-                else {
-                    parameters.remove(f);
-                }
             }
         }
     }
@@ -117,10 +112,16 @@ public class StructedPerceptron {
                 Sentence curStc = trainStc.get(i);
                 if (curStc.content.length() == 0)
                     continue;
-                String decode = viterbi(curStc.content);
-                System.out.println(decode + "\n" + curStc.label);
-                updateParameters(curStc, decode, -1);
-                updateParameters(curStc, curStc.label, 1);
+
+                char preLab = '-';
+                for (int j = 0, len = curStc.content.length(); j < len; j++) {
+                    char best = getBestLab(curStc.content, preLab, j);
+                    if (best != curStc.label.charAt(j)) {
+                        addParameters(Fearture.getFeature(curStc.content, preLab, best, j), -1);
+                        addParameters(Fearture.getFeature(curStc.content, preLab, curStc.label.charAt(j), j), 1);
+                    }
+                    preLab = curStc.label.charAt(j);
+                }
             }
         }
 
@@ -148,8 +149,8 @@ public class StructedPerceptron {
 
         long startTime = System.currentTimeMillis();
 
-        readParameters("data/parameter_10.txt");
-        //train(trainFileName);
+        //readParameters("data/parameter_10.txt");
+        train(trainFileName);
 
         final File testFile = new File(testFileName);
         BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(testFile)));

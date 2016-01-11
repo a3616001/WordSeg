@@ -148,8 +148,8 @@ public class StructedPerceptron {
 
         long startTime = System.currentTimeMillis();
 
-        readParameters("data/parameter_10.txt");
-        //train(trainFileName);
+        //readParameters("data/SP10_parameter.txt");
+        train(trainFileName);
 
         final File testFile = new File(testFileName);
         BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(testFile)));

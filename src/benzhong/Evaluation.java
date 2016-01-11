@@ -67,16 +67,16 @@ public class Evaluation {
         System.out.println("For splited label:");
         double p = ((double) splCorrect) / evaSplCnt, r = ((double)splCorrect) / stdSplCnt;
         double f = 2 * p * r / (p + r);
-        System.out.printf("Precision:\n%d / %d = %.2f%%\n", splCorrect, evaSplCnt, p * 100);
-        System.out.printf("Recall:\n%d / %d = %.2f%%\n", splCorrect, stdSplCnt, r * 100);
-        System.out.printf("F-Score:\n %.2f%%\n", f * 100);
+        System.out.printf("Precision:\n%d / %d = %.1f%%\n", splCorrect, evaSplCnt, p * 100);
+        System.out.printf("Recall:\n%d / %d = %.1f%%\n", splCorrect, stdSplCnt, r * 100);
+        System.out.printf("F-Score:\n %.1f%%\n", f * 100);
 
         System.out.println("For words:");
         p = ((double) correct) / evaCnt; r = ((double)correct)/stdCnt;
         f = 2 * p * r / (p + r);
-        System.out.printf("Precision:\n%d / %d = %.2f%%\n", correct, evaCnt, p * 100);
-        System.out.printf("Recall:\n%d / %d = %.2f%%\n", correct, stdCnt, r * 100);
-        System.out.printf("F-Score:\n %.2f%%\n", f * 100);
+        System.out.printf("Precision:\n%d / %d = %.1f%%\n", correct, evaCnt, p * 100);
+        System.out.printf("Recall:\n%d / %d = %.1f%%\n", correct, stdCnt, r * 100);
+        System.out.printf("F-Score:\n %.1f%%\n", f * 100);
     }
 
     public static void main(String[] args) throws IOException {

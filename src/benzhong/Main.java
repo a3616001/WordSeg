@@ -10,11 +10,13 @@ public class Main {
         String trainFileName = "data/train.txt";
         String testFileName = "data/test.txt";
         String answerFileName = "data/test.answer.txt";
-        String outputFileName = "data/NP2_output.txt";
+        String outputFileName = "data/result.txt";
 
-        UnstructedPerceptron.runner(trainFileName, testFileName, outputFileName);
-        //StructedPerceptron.runner(trainFileName, testFileName, outputFileName);
+        //AveragedPerceptron.runner(trainFileName, testFileName, outputFileName);
+        //UnstructedPerceptron.runner(trainFileName, testFileName, outputFileName);
+        StructedPerceptron.runner(trainFileName, testFileName, outputFileName);
         //MaxMatch.runner(trainFileName, testFileName, outputFileName);
+
         Evaluation.evaluation(answerFileName, outputFileName);
 
     }

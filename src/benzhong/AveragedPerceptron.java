@@ -10,22 +10,24 @@ import java.util.HashSet;
 import java.util.Iterator;
 
 /**
- * Created by BenZ on 16/1/10.
+ * Created by BenZ on 16/1/11.
  */
-public class UnstructedPerceptron {
-    static HashMap<String, Integer> parameters = new HashMap<>();
+public class AveragedPerceptron {
+    static HashMap<String, Double> parameters = new HashMap<>();
+    static HashMap<String, Double> sumParameters = new HashMap<>();
     static ArrayList<Sentence> trainStc = new ArrayList();
-    final static int loopCnt = 2;
+    final static int loopCnt = 10;
+    static int finished = 0;
 
-    static int dot(HashSet<String> feature) {
-        int s = 0;
+    static double dot(HashSet<String> feature) {
+        double s = 0;
         for (String f : feature) {
-            s += parameters.getOrDefault(f, 0);
+            s += parameters.getOrDefault(f, 0.0);
         }
         return s;
     }
 
-    static int[][] f = new int[10005][Main.labelCnt];
+    static double[][] f = new double[10005][Main.labelCnt];
     static int[][] p = new int[10005][Main.labelCnt];
     static String viterbi(String cont) {
 
@@ -35,9 +37,9 @@ public class UnstructedPerceptron {
 
         for (int i = 1, len = cont.length(); i < len; i++) {
             for (int j = 0; j < Main.labelCnt; j++) {
-                f[i][j] = -2147483647;
+                f[i][j] = -2147483647.0;
                 for (int k = 0; k < Main.labelCnt; k++) {
-                    int res = dot(Fearture.getFeature(cont, (char) (k + '0'), (char) (j + '0'), i));
+                    double res = dot(Fearture.getFeature(cont, (char) (k + '0'), (char) (j + '0'), i));
                     if (f[i - 1][k] + res > f[i][j]) {
                         f[i][j] = f[i - 1][k] + res;
                         p[i][j] = k;
@@ -68,29 +70,32 @@ public class UnstructedPerceptron {
         return s;
     }
 
-    static char getBestLab(String cont, char preLab, int index) {
-        char best = '-';
-        int val = -2147483647;
-        for (char i = '0'; i < '4'; i++) {
-            int tmp = dot(Fearture.getFeature(cont, preLab, i, index));
-            if (tmp > val) {
-                best = i;
-                val = tmp;
-            }
-        }
-        return best;
-    }
-
-    static void addParameters(HashSet<String> feature, int d) {
+    static void updateParameters(Sentence s, String lab, int d) {
+        HashSet<String> feature = Fearture.getFeature(s.content, '-', lab.charAt(0), 0);
         Iterator<String> it = feature.iterator();
         while (it.hasNext()) {
             String f = it.next();
-            Integer val = parameters.getOrDefault(f, 0) + d;
+            Double val = parameters.getOrDefault(f, 0.0) + d;
             if (val != 0) {
                 parameters.put(f, val);
             }
             else {
                 parameters.remove(f);
+            }
+        }
+
+        for (int i = 1, num = s.content.length(); i < num; i++) {
+            feature = Fearture.getFeature(s.content, lab.charAt(i - 1), lab.charAt(i), i);
+            it = feature.iterator();
+            while (it.hasNext()) {
+                String f = it.next();
+                Double val = parameters.getOrDefault(f, 0.0) + d;
+                if (val != 0) {
+                    parameters.put(f, val);
+                }
+                else {
+                    parameters.remove(f);
+                }
             }
         }
     }
@@ -112,23 +117,34 @@ public class UnstructedPerceptron {
                 Sentence curStc = trainStc.get(i);
                 if (curStc.content.length() == 0)
                     continue;
+                String decode = viterbi(curStc.content);
+                System.out.println(decode + "\n" + curStc.label);
+                updateParameters(curStc, decode, -1);
+                updateParameters(curStc, curStc.label, 1);
+            }
 
-                char preLab = '-';
-                for (int j = 0, len = curStc.content.length(); j < len; j++) {
-                    char best = getBestLab(curStc.content, preLab, j);
-                    if (best != curStc.label.charAt(j)) {
-                        addParameters(Fearture.getFeature(curStc.content, preLab, best, j), -1);
-                        addParameters(Fearture.getFeature(curStc.content, preLab, curStc.label.charAt(j), j), 1);
-                    }
-                    preLab = curStc.label.charAt(j);
+            for (String f : parameters.keySet()) {
+                Double val = parameters.get(f) + sumParameters.getOrDefault(f, 0.0);
+                if (val != 0) {
+                    sumParameters.put(f, val);
+                }
+                else {
+                    sumParameters.remove(f);
                 }
             }
+            ++finished;
         }
 
         final File tmpFile = new File("data/tmp.txt");
         BufferedWriter bw = new BufferedWriter(new PrintWriter(tmpFile));
+        bw.write(parameters.size() + "\n");
         for (String str : parameters.keySet()) {
             bw.write(str + " " + parameters.get(str) + "\n");
+        }
+        bw.write(finished + "\n");
+        bw.write(sumParameters.size() + "\n");
+        for (String str : sumParameters.keySet()) {
+            bw.write(str + " " + sumParameters.get(str) + "\n");
         }
         bw.close();
     }
@@ -137,20 +153,40 @@ public class UnstructedPerceptron {
         final File parameterFile = new File(parameterFileName);
         BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(parameterFile)));
         String line;
-        while ((line = br.readLine()) != null) {
-            int val = Integer.valueOf(line.substring(line.lastIndexOf(' ') + 1));
+        line = br.readLine();
+        int tot = Integer.valueOf(line);
+        for (int i = 0; i < tot; i++) {
+            line = br.readLine();
+            double val = Double.valueOf(line.substring(line.lastIndexOf(' ') + 1));
             line = line.substring(0, line.lastIndexOf(' '));
             parameters.put(line, val);
         }
+
+        line = br.readLine();
+        finished = Integer.valueOf(line);
+        line = br.readLine();
+        tot = Integer.valueOf(line);
+        for (int i = 0; i < tot; i++) {
+            line = br.readLine();
+            double val = Double.valueOf(line.substring(line.lastIndexOf(' ') + 1));
+            line = line.substring(0, line.lastIndexOf(' '));
+            sumParameters.put(line, val);
+        }
         br.close();
     }
-
     public static void runner(String trainFileName, String testFileName, String outputFileName) throws IOException {
 
         long startTime = System.currentTimeMillis();
 
-        //readParameters("data/parameter_10.txt");
+        //readParameters("data/AP10_parameter.txt");
         train(trainFileName);
+
+        for (String f : sumParameters.keySet()) {
+            double val = sumParameters.get(f);
+            val = val / finished;
+            sumParameters.put(f, val);
+        }
+        parameters = sumParameters;
 
         final File testFile = new File(testFileName);
         BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(testFile)));
